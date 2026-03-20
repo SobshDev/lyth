@@ -65,6 +65,8 @@ services:
 
   # SECURITY: cap_drop ALL removes CAP_NET_RAW — ICMP ping monitors will not work.
   # If ping monitoring is needed, add cap_add: [NET_RAW].
+  # NOTE: read_only is not set — Uptime Kuma v2 needs write access to its working
+  # directory for uploads, logs, and SQLite WAL files beyond the /app/data volume.
   uptime-kuma:
     build: ./docker/uptime-kuma
     networks:
@@ -76,7 +78,6 @@ services:
     mem_limit: 512m
     cpus: 0.5
     restart: unless-stopped
-    read_only: true
     tmpfs:
       - /tmp
     security_opt:
