@@ -17,6 +17,7 @@ services:
       - monitoring-internal
     volumes:
       - prometheus-data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     labels:
       - "traefik.enable=false"
     mem_limit: 1g
