@@ -12,6 +12,7 @@ discovery.docker "containers" {
 }
 
 // Extract useful labels from Docker metadata
+// Supports both Compose (lyth stack) and Swarm (Dokploy services) labels.
 discovery.relabel "containers" {
   targets = discovery.docker.containers.targets
 
@@ -21,6 +22,7 @@ discovery.relabel "containers" {
     target_label  = "container_name"
   }
 
+  // Compose labels (lyth stack services)
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "compose_service"
@@ -29,6 +31,33 @@ discovery.relabel "containers" {
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
     target_label  = "compose_project"
+  }
+
+  // Swarm labels (Dokploy-deployed services)
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_swarm_service_name"]
+    target_label  = "swarm_service"
+  }
+
+  // Unified service_name: defaults to container_name, then overridden by
+  // compose_service or swarm_service when present. Provides a stable identifier
+  // that survives Swarm task restarts and redeploys.
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "(.+)"
+    target_label  = "service_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_swarm_service_name"]
+    regex         = "(.+)"
+    target_label  = "service_name"
   }
 }
 
