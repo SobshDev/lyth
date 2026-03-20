@@ -53,8 +53,11 @@ services:
 
   blackbox-exporter:
     build: ./docker/blackbox-exporter
+    command: ["--config.file=/etc/blackbox_exporter/config.yml"]
     networks:
       - monitoring-internal
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
     labels:
       - "traefik.enable=false"
     mem_limit: 256m
