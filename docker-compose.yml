@@ -101,6 +101,7 @@ services:
       - monitoring-internal
     volumes:
       - loki-data:/loki
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
     labels:
       - "traefik.enable=false"
     mem_limit: 1g
@@ -109,11 +110,12 @@ services:
 
   alloy:
     build: ./docker/alloy
+    command: ["run", "/etc/alloy/config.alloy", "--storage.path=/tmp/alloy"]
     networks:
       - monitoring-internal
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
     labels:
       - "traefik.enable=false"
     mem_limit: 512m
