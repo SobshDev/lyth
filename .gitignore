@@ -5,6 +5,7 @@ PLAN.md
 .env
 .env.*
 !.env.example
+!backup/.env.example
 
 # Editor artifacts
 *.swp

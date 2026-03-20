@@ -1,3 +1,5 @@
+name: lyth
+
 networks:
   monitoring-internal:
     driver: bridge
@@ -40,8 +42,8 @@ services:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
     environment:
-      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
-      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER:?Set GF_SECURITY_ADMIN_USER in .env}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:?Set GF_SECURITY_ADMIN_PASSWORD in .env}
       - GF_SMTP_ENABLED=${GF_SMTP_ENABLED}
       - GF_SMTP_HOST=${GF_SMTP_HOST}
       - GF_SMTP_USER=${GF_SMTP_USER}
@@ -125,8 +127,11 @@ services:
       - ALL
 
   # SECURITY: cAdvisor requires Docker socket and host mounts (/sys, /var/lib/docker,
-  # /sys/fs/cgroup, /) for container metrics. Docker socket grants broad container metadata
-  # visibility. All mounts are read-only. Internal-only network.
+  # /sys/fs/cgroup, /) for container metrics. The Docker socket grants full Docker API
+  # access — :ro only prevents file-level writes to the mount, NOT socket operations.
+  # A compromised cAdvisor container could inspect secrets, launch containers, or
+  # escalate to host. Mitigated by: internal-only network, no-new-privileges, dropped
+  # caps, read-only rootfs. Accept this trade-off or remove cAdvisor.
   cadvisor:
     build: ./docker/cadvisor
     networks:
@@ -170,8 +175,11 @@ services:
     cap_drop:
       - ALL
 
-  # SECURITY: Alloy requires Docker socket (read-only) for container discovery and
-  # log collection. This grants container metadata visibility including env var names.
+  # SECURITY: Alloy requires Docker socket for container discovery and log collection.
+  # The Docker socket grants full Docker API access — :ro only prevents file-level
+  # writes to the mount, NOT socket operations. A compromised Alloy container could
+  # inspect secrets, launch containers, or escalate to host. Mitigated by: internal-only
+  # network, no-new-privileges, dropped caps, read-only rootfs.
   alloy:
     build: ./docker/alloy
     command: ["run", "/etc/alloy/config.alloy", "--storage.path=/tmp/alloy"]
