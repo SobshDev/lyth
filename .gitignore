@@ -1,2 +1,13 @@
 PLAN.md
 .idea
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Editor artifacts
+*.swp
+*.swo
+*~
+*.bak

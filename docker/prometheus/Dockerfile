@@ -8,6 +8,5 @@ CMD [ \
   "--storage.tsdb.path=/prometheus", \
   "--storage.tsdb.retention.time=30d", \
   "--web.console.libraries=/usr/share/prometheus/console_libraries", \
-  "--web.console.templates=/usr/share/prometheus/consoles", \
-  "--web.enable-lifecycle" \
+  "--web.console.templates=/usr/share/prometheus/consoles" \
 ]

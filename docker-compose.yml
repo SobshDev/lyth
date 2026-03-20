@@ -23,6 +23,13 @@ services:
     mem_limit: 1g
     cpus: 1.0
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   grafana:
     build: ./docker/grafana
@@ -46,7 +53,16 @@ services:
     mem_limit: 512m
     cpus: 0.5
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
+  # SECURITY: cap_drop ALL removes CAP_NET_RAW — ICMP ping monitors will not work.
+  # If ping monitoring is needed, add cap_add: [NET_RAW].
   uptime-kuma:
     build: ./docker/uptime-kuma
     networks:
@@ -58,7 +74,16 @@ services:
     mem_limit: 512m
     cpus: 0.5
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
+  # SECURITY: cap_drop ALL removes CAP_NET_RAW — ICMP probe modules will not work.
+  # If icmp probes are needed, add cap_add: [NET_RAW].
   blackbox-exporter:
     build: ./docker/blackbox-exporter
     command: ["--config.file=/etc/blackbox_exporter/config.yml"]
@@ -71,7 +96,15 @@ services:
     mem_limit: 256m
     cpus: 0.25
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
+  # SECURITY: node-exporter requires read-only host filesystem mounts (/proc, /sys, /)
+  # for CPU, memory, disk, and network metrics. This grants broad host file visibility.
+  # Mitigated by: read-only mounts, internal-only network, no-new-privileges, dropped caps.
   node-exporter:
     build: ./docker/node-exporter
     networks:
@@ -85,7 +118,15 @@ services:
     mem_limit: 256m
     cpus: 0.25
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
+  # SECURITY: cAdvisor requires Docker socket and host mounts (/sys, /var/lib/docker,
+  # /sys/fs/cgroup, /) for container metrics. Docker socket grants broad container metadata
+  # visibility. All mounts are read-only. Internal-only network.
   cadvisor:
     build: ./docker/cadvisor
     networks:
@@ -101,6 +142,13 @@ services:
     mem_limit: 256m
     cpus: 0.25
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   loki:
     build: ./docker/loki
@@ -114,7 +162,16 @@ services:
     mem_limit: 1g
     cpus: 1.0
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
+  # SECURITY: Alloy requires Docker socket (read-only) for container discovery and
+  # log collection. This grants container metadata visibility including env var names.
   alloy:
     build: ./docker/alloy
     command: ["run", "/etc/alloy/config.alloy", "--storage.path=/tmp/alloy"]
@@ -128,3 +185,10 @@ services:
     mem_limit: 512m
     cpus: 0.5
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

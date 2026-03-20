@@ -1,3 +1,7 @@
+# Auth is intentionally disabled: single-tenant deployment on an internal-only
+# Docker network (monitoring-internal). Network isolation is the access control.
+# If multi-tenant or cross-network access is ever needed, enable auth and
+# configure X-Scope-OrgID headers on all clients (Alloy, Grafana).
 auth_enabled: false
 
 server:
@@ -44,7 +48,7 @@ compactor:
   compaction_interval: 10m
   retention_enabled: true
   retention_delete_delay: 2h
-  retention_delete_worker_count: 150
+  retention_delete_worker_count: 10
   delete_request_store: filesystem
 
 analytics:
