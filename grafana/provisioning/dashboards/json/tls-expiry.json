@@ -1,0 +1,145 @@
+{
+  "uid": "tls-expiry",
+  "title": "TLS Certificate Expiry",
+  "description": "TLS certificate expiry monitoring for all probed HTTPS targets",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "refresh": "5m",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "editable": false,
+  "templating": {
+    "list": [
+      {
+        "name": "instance",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(probe_ssl_earliest_cert_expiry{job=\"blackbox-tls\"}, instance)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": "$__all" },
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Days Until Expiry",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(probe_ssl_earliest_cert_expiry{job=\"blackbox-tls\", instance=~\"$instance\"} - time()) / 86400",
+          "legendFormat": "{{ instance }}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "max": 90,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "red" },
+              { "value": 14, "color": "yellow" },
+              { "value": 30, "color": "green" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 2,
+      "title": "Certificate Expiry Dates",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_ssl_earliest_cert_expiry{job=\"blackbox-tls\", instance=~\"$instance\"}",
+          "legendFormat": "{{ instance }}",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "__name__": true, "job": true },
+            "renameByName": { "instance": "Website", "Value": "Expiry Date" }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIso"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Expiry Date" },
+            "properties": [
+              { "id": "unit", "value": "dateTimeFromNow" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "title": "Days Remaining Trend",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(probe_ssl_earliest_cert_expiry{job=\"blackbox-tls\", instance=~\"$instance\"} - time()) / 86400",
+          "legendFormat": "{{ instance }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "red" },
+              { "value": 14, "color": "yellow" },
+              { "value": 30, "color": "green" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "table", "placement": "bottom" }
+      }
+    }
+  ]
+}
