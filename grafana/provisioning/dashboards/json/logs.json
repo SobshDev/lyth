@@ -35,8 +35,8 @@
         "name": "level",
         "label": "Level",
         "type": "custom",
-        "query": "All : ,Error : error|fatal|panic|exception,Warn : warn|warning,Info : info,Debug : debug",
-        "current": { "text": "All", "value": "" },
+        "query": "All : .*,Error : error|fatal|panic|exception,Warn : warn|warning,Info : info,Debug : debug",
+        "current": { "text": "All", "value": ".*" },
         "includeAll": false,
         "multi": false
       }
