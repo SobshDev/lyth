@@ -63,10 +63,10 @@ services:
     cap_drop:
       - ALL
 
-  # SECURITY: cap_drop ALL removes CAP_NET_RAW — ICMP ping monitors will not work.
-  # If ping monitoring is needed, add cap_add: [NET_RAW].
-  # NOTE: read_only is not set — Uptime Kuma v2 needs write access to its working
-  # directory for uploads, logs, and SQLite WAL files beyond the /app/data volume.
+  # SECURITY: Uptime Kuma v2 requires full filesystem write access (SQLite, uploads,
+  # logs, db-config). cap_drop/no-new-privileges/read_only are incompatible with this
+  # image. Security relies on: isolated network (dokploy-network only for Traefik
+  # routing), TLS + auth via Traefik, and resource limits.
   uptime-kuma:
     build: ./docker/uptime-kuma
     networks:
@@ -78,12 +78,6 @@ services:
     mem_limit: 512m
     cpus: 0.5
     restart: unless-stopped
-    tmpfs:
-      - /tmp
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
 
   # SECURITY: cap_drop ALL removes CAP_NET_RAW — ICMP probe modules will not work.
   # If icmp probes are needed, add cap_add: [NET_RAW].
