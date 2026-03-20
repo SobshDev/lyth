@@ -1,0 +1,260 @@
+apiVersion: 1
+groups:
+  # TLS certificate expiry — evaluated hourly (slow-moving metric)
+  - orgId: 1
+    name: TLS Certificate Alerts
+    folder: Infrastructure Alerts
+    interval: 1h
+    rules:
+      - uid: tls-cert-expiring
+        title: TLS Certificate Expiring Soon
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: (probe_ssl_earliest_cert_expiry{job="blackbox-tls"} - time()) / 86400
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: lt
+                    params:
+                      - 14
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    type: last
+                    params: []
+              refId: B
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 0s
+        labels:
+          severity: critical
+        annotations:
+          summary: "TLS certificate for {{ $labels.instance }} expires in {{ $values.A.Value }} days"
+
+  # TLS probe failure — evaluated every 5 minutes for fast detection
+  - orgId: 1
+    name: TLS Probe Alerts
+    folder: Infrastructure Alerts
+    interval: 5m
+    rules:
+      - uid: tls-probe-failed
+        title: TLS Probe Failed
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: probe_success{job="blackbox-tls"}
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: lt
+                    params:
+                      - 1
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    type: last
+                    params: []
+              refId: B
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TLS probe failed for {{ $labels.instance }}"
+
+  # Host disk and memory alerts — evaluated every 5 minutes
+  - orgId: 1
+    name: Host Resource Alerts
+    folder: Infrastructure Alerts
+    interval: 5m
+    rules:
+      - uid: host-disk-critical
+        title: Host Disk Usage Critical
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: 100 - (node_filesystem_avail_bytes{job="node-exporter", fstype=~"ext4|xfs|btrfs|zfs"} / node_filesystem_size_bytes{job="node-exporter"} * 100)
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params:
+                      - 85
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    type: last
+                    params: []
+              refId: B
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk usage on {{ $labels.instance }} mount {{ $labels.mountpoint }} is above 85%"
+
+      - uid: host-memory-critical
+        title: Host Memory Usage Critical
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: 100 * (1 - node_memory_MemAvailable_bytes{job="node-exporter"} / node_memory_MemTotal_bytes{job="node-exporter"})
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params:
+                      - 90
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    type: last
+                    params: []
+              refId: B
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memory usage on {{ $labels.instance }} is above 90%"
+
+  # Host CPU alert — evaluated every minute, fires after 5m sustained
+  - orgId: 1
+    name: Host CPU Alerts
+    folder: Infrastructure Alerts
+    interval: 1m
+    rules:
+      - uid: host-cpu-sustained
+        title: Host CPU Sustained High Usage
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{job="node-exporter", mode="idle"}[2m])) * 100)
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params:
+                      - 90
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    type: last
+                    params: []
+              refId: B
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU usage on {{ $labels.instance }} sustained above 90% for 5 minutes"
